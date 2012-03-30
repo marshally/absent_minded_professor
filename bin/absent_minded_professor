@@ -1,0 +1,53 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH << File.dirname(__FILE__) + "/../lib" if $0 == __FILE__
+require 'optparse'
+require 'absent_minded_professor'
+
+CONFIG = { :verbose => false, :write => false }
+OPERATIONS = %w(ls forget remember)
+
+option_parser = OptionParser.new do |opts|
+  opts.banner = "AbsentMindedProfessor #{AbsentMindedProfessor::VERSION}, the remembered list manager\nUsage: #{__FILE__} [#{OPERATIONS.join('|')}] [options]"
+
+  opts.on("-P", "--permanent", "Force start (disabled) agents") do |verbose|
+    CONFIG[:permanent] = true
+  end
+
+  opts.on("-v", "--verbose", "Show command executions") do |verbose|
+    CONFIG[:verbose] = true
+  end
+
+  opts.separator <<-EOS
+
+Supported commands:
+
+ ls [pattern]            Show the list of installed agents, with optional [pattern] filter
+ list [pattern]          Alias for 'ls'
+ forget [-vP] [pattern]  Start the first agent matching [pattern]
+ remember [-v] [pattern] Stop the first agent matching [pattern]
+
+Example:
+ absent_minded_professor ls
+ absent_minded_professor forget Chrome
+ absent_minded_professor forget Quicktime --permanent
+
+EOS
+end
+option_parser.parse!
+
+
+op = ARGV.shift
+if OPERATIONS.include?(op)
+  begin
+    AbsentMindedProfessor.new.send(op.to_sym, ARGV)
+  rescue ArgumentError => ex
+    puts ex.message
+  rescue Exception => e
+    puts "Uh oh, I didn't expect this:"
+    puts e.message
+    puts e.backtrace.join("\n")
+  end
+else
+  puts option_parser.help
+end
